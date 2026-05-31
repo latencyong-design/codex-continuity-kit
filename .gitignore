@@ -1,0 +1,9 @@
+codex-continuity-output/
+session-index.md
+rescues/
+journals/
+GLOBAL_STATE.md
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
