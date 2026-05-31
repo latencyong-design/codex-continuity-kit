@@ -8,6 +8,18 @@ It keeps task state outside the chat window, helps recover from broken or
 compacted threads, and gives a fresh Codex conversation enough evidence to
 continue without guessing.
 
+## Platform Support
+
+The export script is designed for PowerShell on Windows, macOS, and Linux.
+
+Default session root:
+
+```text
+<home>/.codex/sessions
+```
+
+Use `-SessionsRoot` when your Codex session files live somewhere else.
+
 ## Why
 
 Long AI coding sessions can fail in practical ways:
@@ -38,6 +50,10 @@ This kit keeps a small local continuity layer next to your workspace.
   - Sanitized example output.
 
 ## Quick Start
+
+Requirements:
+
+- PowerShell 5.1+ on Windows, or PowerShell 7+ (`pwsh`) on macOS/Linux.
 
 Copy the kit into a workspace, then create your local continuity folder:
 
@@ -130,6 +146,18 @@ MIT
 它把任务状态保存到聊天窗口之外，帮助你从长线程、压缩失败或上下文丢失中恢复，让新的
 Codex 对话可以基于证据继续，而不是重新猜现场。
 
+## 平台支持
+
+导出脚本面向 Windows、macOS 和 Linux 上的 PowerShell。
+
+默认 session 根目录：
+
+```text
+<home>/.codex/sessions
+```
+
+如果你的 Codex session 文件在其他位置，请显式传入 `-SessionsRoot`。
+
 ## 为什么需要
 
 长时间 AI 编程会遇到一些实际问题：
@@ -160,6 +188,10 @@ Codex 对话可以基于证据继续，而不是重新猜现场。
   - 已脱敏的示例输出。
 
 ## 快速开始
+
+依赖：
+
+- Windows 上的 PowerShell 5.1+，或 macOS/Linux 上的 PowerShell 7+ (`pwsh`)。
 
 把本工具包复制到工作区，然后创建本地连续性目录：
 

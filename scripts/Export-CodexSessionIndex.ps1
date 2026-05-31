@@ -1,5 +1,5 @@
 param(
-    [string]$SessionsRoot = "$env:USERPROFILE\.codex\sessions",
+    [string]$SessionsRoot = "",
     [string]$OutputRoot = "",
     [string]$Keyword = "",
     [string]$ThreadId = "",
@@ -12,6 +12,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 $redactOutput = $RedactPaths.IsPresent -or $Shareable.IsPresent
+
+function Get-UserHomeDirectory {
+    $home = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+    if (-not [string]::IsNullOrWhiteSpace($home)) { return $home }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) { return $env:USERPROFILE }
+    if (-not [string]::IsNullOrWhiteSpace($HOME)) { return $HOME }
+
+    throw "Could not resolve a user home directory. Pass -SessionsRoot explicitly."
+}
+
+if ([string]::IsNullOrWhiteSpace($SessionsRoot)) {
+    $SessionsRoot = Join-Path (Join-Path (Get-UserHomeDirectory) ".codex") "sessions"
+}
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path (Get-Location) "codex-continuity-output"
