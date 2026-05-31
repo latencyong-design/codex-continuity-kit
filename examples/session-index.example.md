@@ -3,6 +3,7 @@
 Generated: 2026-01-01 12:00:00
 Sessions root: `<home>/.codex/sessions`
 Keyword filter: `deployment`
+Redaction: `local user profile paths redacted`
 
 ## 2026-01-01 11:58:12 - example-thread-id
 

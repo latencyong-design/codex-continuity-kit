@@ -4,19 +4,19 @@ English | [中文](#中文)
 
 A small, local-first continuity kit for long Codex sessions.
 
-It helps you keep task state outside the chat window, recover from broken or
-compacted threads, and hand work to a fresh Codex conversation with evidence
-instead of memory guesses.
+It keeps task state outside the chat window, helps recover from broken or
+compacted threads, and gives a fresh Codex conversation enough evidence to
+continue without guessing.
 
 ## Why
 
-Long AI coding sessions can fail in boring ways:
+Long AI coding sessions can fail in practical ways:
 
 - the thread becomes too long;
 - automatic compaction fails;
-- the assistant forgets earlier boundaries;
-- a new conversation loses the current file paths, blockers, and next step;
-- the user has to reconstruct context by hand.
+- a new conversation loses current file paths, blockers, and next steps;
+- the assistant repeats old discovery work;
+- the user has to reconstruct context manually.
 
 This kit keeps a small local continuity layer next to your workspace.
 
@@ -25,8 +25,9 @@ This kit keeps a small local continuity layer next to your workspace.
 - `scripts/Export-CodexSessionIndex.ps1`
   - Scans local Codex session JSONL files.
   - Builds a Markdown `session-index.md`.
-  - Optionally extracts recent turns into deterministic rescue files.
+  - Optionally extracts recent turns into rescue files.
   - Uses `FileShare.ReadWrite`, so active JSONL files can still be read.
+  - Supports `-RedactPaths` and `-Shareable` for safer public examples.
 - `templates/GLOBAL_STATE_TEMPLATE.md`
   - A lightweight active-task registry.
 - `templates/TASK_JOURNAL_TEMPLATE.md`
@@ -64,9 +65,19 @@ Create rescue extracts:
 powershell -ExecutionPolicy Bypass -File .\scripts\Export-CodexSessionIndex.ps1 -OutputRoot .\codex-continuity -Keyword "deployment" -CreateRescue -RecentTurns 10
 ```
 
+Generate output intended for public issue examples:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Export-CodexSessionIndex.ps1 -OutputRoot .\codex-continuity-public -Keyword "deployment" -CreateRescue -Shareable
+```
+
+`-Shareable` redacts common local user-profile path roots and excludes developer
+messages even if `-IncludeDeveloperMessages` is passed. It is still your
+responsibility to review generated files before publishing them.
+
 ## Privacy Warning
 
-The kit itself is safe to publish, but its generated outputs are usually not.
+The kit itself is safe to publish, but generated outputs are usually not.
 
 Do not publish generated files such as:
 
@@ -78,6 +89,8 @@ Do not publish generated files such as:
 Generated rescue files can contain user messages, assistant messages, shell
 commands, error output, file paths, hostnames, or secrets that appeared in the
 chat. Review and redact before sharing.
+
+For public bug reports, prefer `-Shareable`, then manually inspect the output.
 
 ## Suggested Workflow
 
@@ -96,6 +109,12 @@ codex-continuity/journals/
 Before risky operations, long remote work, scope switches, or final response,
 ask it to update the journal.
 
+## Contributing
+
+Issues and pull requests are welcome. Use the issue templates and do not paste
+real session content, tokens, customer data, private hostnames, or private
+workspace paths into public issues.
+
 ## License
 
 MIT
@@ -106,19 +125,19 @@ MIT
 
 [English](#codex-continuity-kit) | 中文
 
-一个本地优先的 Codex 长对话连续性工具包。
+一个本地优先的 Codex 长任务连续性工具包。
 
-它用于把任务状态保存在聊天窗口之外，帮助你从长线程、压缩失败、上下文丢失
-或新对话接手中恢复，而不是靠记忆重新猜测现场。
+它把任务状态保存到聊天窗口之外，帮助你从长线程、压缩失败或上下文丢失中恢复，让新的
+Codex 对话可以基于证据继续，而不是重新猜现场。
 
 ## 为什么需要
 
-长时间 AI 编程会遇到一些很实际的问题：
+长时间 AI 编程会遇到一些实际问题：
 
 - 对话太长；
 - 自动压缩失败；
-- 助手忘记之前的边界；
-- 新对话不知道当前路径、阻塞点和下一步；
+- 新对话丢失当前路径、阻塞点和下一步；
+- 助手重复之前的探索；
 - 用户被迫手动重建上下文。
 
 这个工具包提供一个放在工作区旁边的本地连续性层。
@@ -128,8 +147,9 @@ MIT
 - `scripts/Export-CodexSessionIndex.ps1`
   - 扫描本地 Codex session JSONL 文件。
   - 生成 Markdown 格式的 `session-index.md`。
-  - 可选生成 deterministic rescue 文件，提取最近若干轮对话。
+  - 可选生成 rescue 摘录文件，提取最近若干轮对话。
   - 使用 `FileShare.ReadWrite`，可以读取仍在写入中的 JSONL。
+  - 支持 `-RedactPaths` 和 `-Shareable`，用于生成更适合公开 issue 的脱敏输出。
 - `templates/GLOBAL_STATE_TEMPLATE.md`
   - 轻量级活跃任务登记表。
 - `templates/TASK_JOURNAL_TEMPLATE.md`
@@ -141,7 +161,7 @@ MIT
 
 ## 快速开始
 
-把本工具包复制到你的工作区，然后创建本地连续性目录：
+把本工具包复制到工作区，然后创建本地连续性目录：
 
 ```powershell
 mkdir .\codex-continuity
@@ -167,19 +187,30 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Export-CodexSessionIndex.ps1 
 powershell -ExecutionPolicy Bypass -File .\scripts\Export-CodexSessionIndex.ps1 -OutputRoot .\codex-continuity -Keyword "deployment" -CreateRescue -RecentTurns 10
 ```
 
+生成适合公开 issue 示例的输出：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Export-CodexSessionIndex.ps1 -OutputRoot .\codex-continuity-public -Keyword "deployment" -CreateRescue -Shareable
+```
+
+`-Shareable` 会脱敏常见本地用户目录路径，并且即使传入
+`-IncludeDeveloperMessages` 也不会导出 developer messages。公开前仍然必须人工检查。
+
 ## 隐私提醒
 
-这个工具包本身可以公开，但它生成出来的内容通常不能直接公开。
+工具包本身可以公开，但它生成的内容通常不能直接公开。
 
 不要直接发布这些生成文件：
 
 - `session-index.md`；
 - `rescues/*.md`；
 - 包含真实路径、命令、主机、工单或凭据的 journals；
-- 你已经填入真实项目状态后的 `GLOBAL_STATE.md`。
+- 已经填入真实项目状态后的 `GLOBAL_STATE.md`。
 
-rescue 文件可能包含用户消息、助手消息、命令、错误输出、文件路径、主机名，
-甚至对话中出现过的密钥。分享前必须审查和脱敏。
+rescue 文件可能包含用户消息、助手消息、命令、错误输出、文件路径、主机名，甚至对话中
+出现过的密钥。分享前必须审查和脱敏。
+
+公开 bug report 时，优先使用 `-Shareable`，然后再人工检查输出。
 
 ## 建议工作流
 
@@ -196,6 +227,11 @@ codex-continuity/journals/
 ```
 
 在执行高风险操作、长时间远程工作、切换范围或最终回复前，让它更新日志。
+
+## 参与贡献
+
+欢迎提交 issue 和 pull request。公开 issue 中不要粘贴真实 session 内容、token、客户
+数据、私有主机名或私有工作区路径。
 
 ## 许可证
 

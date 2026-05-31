@@ -5,10 +5,13 @@ param(
     [string]$ThreadId = "",
     [int]$RecentTurns = 8,
     [switch]$CreateRescue,
-    [switch]$IncludeDeveloperMessages
+    [switch]$IncludeDeveloperMessages,
+    [switch]$RedactPaths,
+    [switch]$Shareable
 )
 
 $ErrorActionPreference = "Stop"
+$redactOutput = $RedactPaths.IsPresent -or $Shareable.IsPresent
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path (Get-Location) "codex-continuity-output"
@@ -39,6 +42,20 @@ function Shorten($text, $limit = 360) {
 function Unescape-JsonText($text) {
     if ($null -eq $text) { return "" }
     return [System.Text.RegularExpressions.Regex]::Unescape([string]$text)
+}
+
+function Protect-OutputText($text) {
+    if ($null -eq $text) { return "" }
+    $safe = [string]$text
+    if (-not $script:redactOutput) { return $safe }
+
+    $safe = $safe -replace '(?i)[A-Z]:\\Users\\[^\\`"''<>\|\r\n]+', '<windows-user-profile>'
+    $safe = $safe -replace '(?i)[A-Z]:\\Documents and Settings\\[^\\`"''<>\|\r\n]+', '<windows-user-profile>'
+    $safe = $safe -replace '/Users/[^/`"''<>\|\s]+', '<mac-user-profile>'
+    $safe = $safe -replace '/home/[^/`"''<>\|\s]+', '<linux-user-profile>'
+    $safe = $safe -replace '\\\\[^\\\s`"''<>\|]+\\[^\\\s`"''<>\|]+', '<unc-path>'
+
+    return $safe
 }
 
 function Get-JsonField($line, $name) {
@@ -140,12 +157,12 @@ function Write-Rescue($session, $outDir, $recentTurns) {
     $lines.Add("") | Out-Null
     $lines.Add("> Review and redact before sharing. This file may contain private conversation content.") | Out-Null
     $lines.Add("") | Out-Null
-    $lines.Add('- Thread id: `' + $session.id + '`') | Out-Null
-    $lines.Add('- Timestamp: `' + $session.timestamp + '`') | Out-Null
+    $lines.Add('- Thread id: `' + (Protect-OutputText $session.id) + '`') | Out-Null
+    $lines.Add('- Timestamp: `' + (Protect-OutputText $session.timestamp) + '`') | Out-Null
     $lines.Add('- Last write: `' + $session.lastWrite.ToString("yyyy-MM-dd HH:mm:ss") + '`') | Out-Null
-    $lines.Add('- CWD: `' + $session.cwd + '`') | Out-Null
-    $lines.Add('- Model: `' + $session.model + '`') | Out-Null
-    $lines.Add('- Source JSONL: `' + $session.path + '`') | Out-Null
+    $lines.Add('- CWD: `' + (Protect-OutputText $session.cwd) + '`') | Out-Null
+    $lines.Add('- Model: `' + (Protect-OutputText $session.model) + '`') | Out-Null
+    $lines.Add('- Source JSONL: `' + (Protect-OutputText $session.path) + '`') | Out-Null
     $lines.Add("") | Out-Null
 
     $lines.Add("## Recent Turns") | Out-Null
@@ -155,20 +172,20 @@ function Write-Rescue($session, $outDir, $recentTurns) {
         $lines.Add("### " + $t.role) | Out-Null
         $lines.Add("") | Out-Null
         $lines.Add('```text') | Out-Null
-        $lines.Add((Shorten $t.text 2500)) | Out-Null
+        $lines.Add((Protect-OutputText (Shorten $t.text 2500))) | Out-Null
         $lines.Add('```') | Out-Null
     }
 
     $lines.Add("") | Out-Null
     $lines.Add("## Recent Commands") | Out-Null
     foreach ($c in @($session.commands | Select-Object -Last 20)) {
-        $lines.Add('- `' + $c + '`') | Out-Null
+        $lines.Add('- `' + (Protect-OutputText $c) + '`') | Out-Null
     }
 
     $lines.Add("") | Out-Null
     $lines.Add("## Error-Like Outputs") | Out-Null
     foreach ($e in @($session.errors | Select-Object -Last 20)) {
-        $lines.Add("- " + $e) | Out-Null
+        $lines.Add("- " + (Protect-OutputText $e)) | Out-Null
     }
 
     [System.IO.File]::WriteAllLines($outPath, $lines, [System.Text.UTF8Encoding]::new($false))
@@ -185,7 +202,7 @@ $files = Get-ChildItem -LiteralPath $SessionsRoot -Recurse -File -Filter "rollou
 
 $sessions = New-Object System.Collections.Generic.List[object]
 foreach ($f in $files) {
-    $s = Read-Session $f.FullName $IncludeDeveloperMessages.IsPresent
+    $s = Read-Session $f.FullName ($IncludeDeveloperMessages.IsPresent -and -not $Shareable.IsPresent)
     if ($ThreadId -and $s.id -notlike "*$ThreadId*") { continue }
     if ($Keyword -and (($s.matchText + "`n" + $s.cwd + "`n" + $s.path) -notmatch [regex]::Escape($Keyword))) { continue }
     $sessions.Add($s) | Out-Null
@@ -198,24 +215,26 @@ $index.Add("") | Out-Null
 $index.Add("> Review and redact before sharing. This file may contain private paths or conversation content.") | Out-Null
 $index.Add("") | Out-Null
 $index.Add("Generated: " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss")) | Out-Null
-$index.Add('Sessions root: `' + $SessionsRoot + '`') | Out-Null
-if ($Keyword) { $index.Add('Keyword filter: `' + $Keyword + '`') | Out-Null }
-if ($ThreadId) { $index.Add('Thread filter: `' + $ThreadId + '`') | Out-Null }
+$index.Add('Sessions root: `' + (Protect-OutputText $SessionsRoot) + '`') | Out-Null
+if ($Keyword) { $index.Add('Keyword filter: `' + (Protect-OutputText $Keyword) + '`') | Out-Null }
+if ($ThreadId) { $index.Add('Thread filter: `' + (Protect-OutputText $ThreadId) + '`') | Out-Null }
+if ($redactOutput) { $index.Add('Redaction: `local user profile paths redacted`') | Out-Null }
 $index.Add("") | Out-Null
 
 foreach ($s in $sessions) {
     $lastUser = @($s.turns | Where-Object role -eq "user" | Select-Object -Last 1)
     $lastAssistant = @($s.turns | Where-Object role -eq "assistant" | Select-Object -Last 1)
-    $index.Add("## " + $s.lastWrite.ToString("yyyy-MM-dd HH:mm:ss") + " - " + $(if ($s.id) { $s.id } else { "(no id)" })) | Out-Null
+    $sessionId = if ($s.id) { Protect-OutputText $s.id } else { "(no id)" }
+    $index.Add("## " + $s.lastWrite.ToString("yyyy-MM-dd HH:mm:ss") + " - " + $sessionId) | Out-Null
     $index.Add("") | Out-Null
-    $index.Add('- CWD: `' + $s.cwd + '`') | Out-Null
-    $index.Add('- Model: `' + $s.model + '`') | Out-Null
-    $index.Add('- JSONL: `' + $s.path + '`') | Out-Null
+    $index.Add('- CWD: `' + (Protect-OutputText $s.cwd) + '`') | Out-Null
+    $index.Add('- Model: `' + (Protect-OutputText $s.model) + '`') | Out-Null
+    $index.Add('- JSONL: `' + (Protect-OutputText $s.path) + '`') | Out-Null
     $index.Add("- Size: $([math]::Round($s.sizeBytes / 1MB, 2)) MB") | Out-Null
-    $index.Add("- Last user: " + (Shorten $(if ($lastUser) { $lastUser[0].text } else { "" }) 500)) | Out-Null
-    $index.Add("- Last assistant: " + (Shorten $(if ($lastAssistant) { $lastAssistant[0].text } else { "" }) 500)) | Out-Null
+    $index.Add("- Last user: " + (Protect-OutputText (Shorten $(if ($lastUser) { $lastUser[0].text } else { "" }) 500))) | Out-Null
+    $index.Add("- Last assistant: " + (Protect-OutputText (Shorten $(if ($lastAssistant) { $lastAssistant[0].text } else { "" }) 500))) | Out-Null
     if ($s.errors.Count -gt 0) {
-        $index.Add("- Recent error-like output: " + (Shorten $s.errors[$s.errors.Count - 1] 500)) | Out-Null
+        $index.Add("- Recent error-like output: " + (Protect-OutputText (Shorten $s.errors[$s.errors.Count - 1] 500))) | Out-Null
     }
     $index.Add("") | Out-Null
 }

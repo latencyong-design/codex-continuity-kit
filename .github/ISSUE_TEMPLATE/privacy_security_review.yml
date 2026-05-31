@@ -1,0 +1,24 @@
+name: Privacy or security review
+description: Report a privacy, local-info, or hardening concern.
+title: "[security] "
+labels: ["security", "privacy"]
+body:
+  - type: textarea
+    id: concern
+    attributes:
+      label: Concern
+      description: Do not paste real session content, private paths, tokens, hosts, or customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+    validations:
+      required: true
+  - type: textarea
+    id: suggested_fix
+    attributes:
+      label: Suggested fix
+    validations:
+      required: false
