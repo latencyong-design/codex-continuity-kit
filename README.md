@@ -48,6 +48,8 @@ This kit keeps a small local continuity layer next to your workspace.
   - A snippet you can add to a workspace `AGENTS.md`.
 - `examples/session-index.example.md`
   - Sanitized example output.
+- `examples/shareable-output.example.md`
+  - Safe rescue and `-Shareable` before/after examples for public issues.
 
 ## Quick Start
 
@@ -186,6 +188,8 @@ Codex 对话可以基于证据继续，而不是重新猜现场。
   - 可加入工作区 `AGENTS.md` 的连续性规则片段。
 - `examples/session-index.example.md`
   - 已脱敏的示例输出。
+- `examples/shareable-output.example.md`
+  - 用于公开 issue 的安全 rescue 和 `-Shareable` 前后对照示例。
 
 ## 快速开始
 
